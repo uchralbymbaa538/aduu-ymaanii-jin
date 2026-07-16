@@ -118,6 +118,15 @@
     border-width: 0;
   }
 
+  /* Sent items: shown collapsed/greyed, data kept but hidden until reopened */
+  .malchin-item.sent .malchin-header {
+    background: #F5F1E9;
+    color: #9A9186;
+  }
+  .malchin-item.sent .malchin-header .badge {
+    color: #B9AE9E;
+  }
+
   .malchin-header {
     display: flex;
     align-items: center;
@@ -143,6 +152,14 @@
     font-size: 11px;
     color: #9A9186;
     font-weight: normal;
+    margin-left: 6px;
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+  .malchin-header .sent-badge {
+    font-size: 10.5px;
+    color: #6FA97B;
+    font-weight: bold;
     margin-left: 6px;
     flex-shrink: 0;
     white-space: nowrap;
@@ -363,7 +380,7 @@
   });
 
   // ---------- State ----------
-  // malchins = { name: { total: N, weights: [null, 12.5, ...] } }
+  // malchins = { name: { total: N, weights: [null, 12.5, ...], sent: false } }
   var malchins = {};
   var activeMalchin = null;
 
@@ -383,7 +400,9 @@
       var isExpanded = name === activeMalchin;
 
       var li = document.createElement('li');
-      li.className = 'malchin-item' + (isExpanded ? ' expanded' : '');
+      li.className = 'malchin-item'
+        + (isExpanded ? ' expanded' : '')
+        + (data.sent ? ' sent' : '');
 
       // ---- Header ----
       var header = document.createElement('div');
@@ -396,6 +415,16 @@
       var badge = document.createElement('span');
       badge.className = 'badge';
       badge.textContent = '(' + filledCount + '/' + data.total + ')';
+
+      header.appendChild(nameSpan);
+      header.appendChild(badge);
+
+      if (data.sent) {
+        var sentBadge = document.createElement('span');
+        sentBadge.className = 'sent-badge';
+        sentBadge.textContent = 'Илгээсэн';
+        header.appendChild(sentBadge);
+      }
 
       var arrow = document.createElement('span');
       arrow.className = 'arrow';
@@ -410,8 +439,6 @@
         removeMalchin(name);
       });
 
-      header.appendChild(nameSpan);
-      header.appendChild(badge);
       header.appendChild(arrow);
       header.appendChild(removeBtn);
       header.addEventListener('click', function () {
@@ -460,7 +487,8 @@
 
     malchins[name] = {
       total: total,
-      weights: new Array(total).fill(null)
+      weights: new Array(total).fill(null),
+      sent: false
     };
     input.value = '';
     countInput.value = '';
@@ -599,8 +627,11 @@
         totalMalchin + ' малчин, ' + totalWeighed + '/' + totalPlanned + ' ямааны жин Firebase-т амжилттай хадгалагдлаа.';
       document.getElementById('overlay').classList.add('visible');
 
-      // Амжилттай илгээсэн тул орон нутгийн жагсаалтыг цэвэрлэнэ.
-      malchins = {};
+      // Амжилттай илгээсэн тул малчин + жингийн мэдээллийг устгахгүй,
+      // харин хаалттай (нуугдмал/collapsed) байдалд оруулна.
+      Object.keys(malchins).forEach(function (name) {
+        malchins[name].sent = true;
+      });
       activeMalchin = null;
       renderMalchinList();
     }).catch(function (err) {
