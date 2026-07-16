@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ямааны Жин</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body {
+    height: 100%;
+    margin: 0;
+  }
+  body {
+    font-family: Arial, sans-serif;
+    background: #FAF6F0;
+    color: #4A433C;
+  }
+
+  .app {
+    display: flex;
+    justify-content: center;
+    min-height: 100vh;
+    width: 100%;
+    padding: 24px 16px;
+  }
+
+  /* ---------- Main panel ---------- */
+  .panel {
+    width: 100%;
+    max-width: 640px;
+    background: #fff;
+    border: 1px solid #EAE1D3;
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    padding: 22px;
+    height: fit-content;
+  }
+  .back-link {
+    display: inline-block;
+    margin-bottom: 14px;
+    font-size: 13px;
+    color: #C9A25A;
+    text-decoration: none;
+  }
+  .back-link:hover { text-decoration: underline; }
+
+  .panel h1 {
+    font-size: 20px;
+    margin: 0 0 2px;
+  }
+  .panel .sub {
+    font-size: 13px;
+    color: #9A9186;
+    margin: 0 0 18px;
+  }
+
+  h3.section-title {
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: #9A9186;
+    margin: 18px 0 8px;
+  }
+  h3.section-title:first-of-type { margin-top: 0; }
+
+  .add-row {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 10px;
+  }
+  .add-row input {
+    flex: 1;
+    padding: 10px;
+    font-size: 14px;
+    border: 1px solid #EAE1D3;
+    border-radius: 6px;
+    background: #FAF6F0;
+    min-width: 0;
+  }
+  .add-row input:focus {
+    outline: none;
+    border-color: #E8C77E;
+  }
+  .add-row button {
+    width: 42px;
+    border: none;
+    border-radius: 6px;
+    background: #E8C77E;
+    color: #5C4A1F;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  .add-row button:hover { background: #C9A25A; color: #fff; }
+
+  #malchin-list {
+    list-style: none;
+    margin: 0 0 4px;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  /* ---------- Accordion item ---------- */
+  .malchin-item {
+    border: 1px solid #EAE1D3;
+    border-radius: 8px;
+    overflow: hidden;
+    transition: max-height .35s ease, opacity .3s ease, margin .35s ease;
+    max-height: 400px;
+  }
+  .malchin-item.collapsing {
+    max-height: 0 !important;
+    opacity: 0;
+    margin: 0;
+    border-width: 0;
+  }
+
+  .malchin-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 12px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background .15s;
+  }
+  .malchin-header:hover { background: #FFF7E6; }
+  .malchin-item.expanded .malchin-header {
+    background: #FFF7E6;
+    font-weight: bold;
+  }
+  .malchin-header .name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+  }
+  .malchin-header .badge {
+    font-size: 11px;
+    color: #9A9186;
+    font-weight: normal;
+    margin-left: 6px;
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+  .malchin-header .arrow {
+    display: inline-block;
+    margin: 0 6px;
+    color: #C9A25A;
+    font-size: 11px;
+    transition: transform .25s ease;
+  }
+  .malchin-item.expanded .malchin-header .arrow {
+    transform: rotate(180deg);
+  }
+  .malchin-header .remove-malchin {
+    background: none;
+    border: none;
+    color: #C9A25A;
+    font-size: 15px;
+    cursor: pointer;
+    padding: 0 2px;
+    line-height: 1;
+  }
+  .malchin-header .remove-malchin:hover { color: #E08A7D; }
+
+  .malchin-body {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height .35s ease;
+  }
+  .malchin-item.expanded .malchin-body {
+    max-height: 2000px;
+  }
+  .malchin-body-inner {
+    padding: 4px 12px 14px;
+    border-top: 1px solid #EAE1D3;
+  }
+
+  .empty-hint {
+    font-size: 12.5px;
+    color: #9A9186;
+    text-align: center;
+    padding: 16px 6px;
+    border: 1px dashed #EAE1D3;
+    border-radius: 8px;
+  }
+
+  /* ---------- Horse rows ---------- */
+  .horse-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding-top: 10px;
+  }
+
+  .horse-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border: 1px solid #EAE1D3;
+    border-radius: 8px;
+    font-size: 13.5px;
+    background: #FAF6F0;
+  }
+  .horse-row.editing {
+    background: #fff;
+    border-color: #E8C77E;
+  }
+  .horse-row .h-label {
+    width: 60px;
+    min-width: 60px;
+    color: #9A9186;
+  }
+  .horse-row .h-value {
+    flex: 1;
+    font-weight: bold;
+  }
+  .horse-row input.h-input {
+    flex: 1;
+    padding: 7px 8px;
+    font-size: 13.5px;
+    border: 1px solid #EAE1D3;
+    border-radius: 6px;
+    min-width: 0;
+  }
+  .horse-row input.h-input:focus {
+    outline: none;
+    border-color: #E8C77E;
+  }
+  .horse-row .kg { color: #9A9186; font-size: 12px; }
+  .horse-row .delete-btn {
+    border: none;
+    background: none;
+    color: #E08A7D;
+    font-size: 15px;
+    cursor: pointer;
+    padding: 0 2px;
+    line-height: 1;
+  }
+  .horse-row .delete-btn:hover { color: #C0392B; }
+
+  .send-btn {
+    margin-top: 18px;
+    width: 100%;
+    padding: 12px;
+    background: #E8C77E;
+    color: #5C4A1F;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  .send-btn:hover { background: #C9A25A; color: #fff; }
+  .send-btn:disabled {
+    background: #EAE1D3;
+    color: #9A9186;
+    cursor: not-allowed;
+  }
+
+  /* ---------- Success overlay ---------- */
+  .overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(74,67,60,0.35);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+  }
+  .overlay.visible { display: flex; }
+  .success-panel {
+    background: #fff;
+    border-radius: 12px;
+    padding: 30px;
+    width: 320px;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+  }
+  .success-panel .icon { font-size: 40px; margin-bottom: 10px; }
+  .success-panel h2 { font-size: 17px; margin: 0 0 6px; }
+  .success-panel p { font-size: 13px; color: #9A9186; margin: 0 0 20px; }
+  .success-panel button {
+    width: 100%;
+    padding: 10px;
+    background: #E8C77E;
+    color: #5C4A1F;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  .success-panel button:hover { background: #C9A25A; color: #fff; }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <div class="panel">
+    <a class="back-link" href="index.html">&larr; Буцах</a>
+    <h1>🐐 Ямааны Жин</h1>
+    <p class="sub">Малчин болон ямааны жин бүртгэх</p>
+
+    <h3 class="section-title">Малчин</h3>
+    <div class="add-row">
+      <input id="malchin-input" type="text" placeholder="Малчны нэр">
+    </div>
+    <div class="add-row">
+      <input id="malchin-count-input" type="number" min="1" placeholder="Нийт адууны тоо">
+      <button id="add-malchin-btn" title="Нэмэх">+</button>
+    </div>
+    <ul id="malchin-list"></ul>
+    <div id="malchin-empty-hint" class="empty-hint">Малчин нэмээгүй байна</div>
+
+    <button class="send-btn" id="send-btn">Илгээх</button>
+  </div>
+
+</div>
+
+<!-- SUCCESS OVERLAY -->
+<div class="overlay" id="overlay">
+  <div class="success-panel">
+    <div class="icon">✅</div>
+    <h2>Амжилттай илгээлээ</h2>
+    <p id="success-detail"></p>
+    <button id="overlay-close">Ойлголоо</button>
+  </div>
+</div>
+
+<!-- Firebase (v12.16.0 modular SDK) -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-analytics.js";
+  import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-auth.js";
+  import {
+    getFirestore,
+    collection,
+    addDoc,
+    serverTimestamp
+  } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
+
+  // firebaseConfig-ийг ЭНД шууд бичихгүй!
+  // "firebase-config.js" файл нь .gitignore-т байгаа тул GitHub дээр харагдахгүй.
+  import { firebaseConfig } from "./firebase-config.js";
+
+  const app = initializeApp(firebaseConfig);
+  const analytics = getAnalytics(app);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  // Firestore-той unauthenticated бичихийг Firestore Rules хориглодог тул
+  // хэрэглэгчийг чимээгүйхэн anonymous хэрэглэгчээр нэвтрүүлнэ.
+  signInAnonymously(auth).catch(function (err) {
+    console.error("Firebase auth алдаа:", err);
+  });
+
+  // ---------- State ----------
+  // malchins = { name: { total: N, weights: [null, 12.5, ...] } }
+  var malchins = {};
+  var activeMalchin = null;
+
+  var malchinListEl = document.getElementById('malchin-list');
+  var malchinEmptyHint = document.getElementById('malchin-empty-hint');
+  var sendBtn = document.getElementById('send-btn');
+
+  // ---------- Malchin list (accordion) ----------
+  function renderMalchinList(focusIndex) {
+    var names = Object.keys(malchins);
+    malchinListEl.innerHTML = '';
+    malchinEmptyHint.style.display = names.length === 0 ? 'block' : 'none';
+
+    names.forEach(function (name) {
+      var data = malchins[name];
+      var filledCount = data.weights.filter(function (w) { return w !== null; }).length;
+      var isExpanded = name === activeMalchin;
+
+      var li = document.createElement('li');
+      li.className = 'malchin-item' + (isExpanded ? ' expanded' : '');
+
+      // ---- Header ----
+      var header = document.createElement('div');
+      header.className = 'malchin-header';
+
+      var nameSpan = document.createElement('span');
+      nameSpan.className = 'name';
+      nameSpan.textContent = name;
+
+      var badge = document.createElement('span');
+      badge.className = 'badge';
+      badge.textContent = '(' + filledCount + '/' + data.total + ')';
+
+      var arrow = document.createElement('span');
+      arrow.className = 'arrow';
+      arrow.textContent = '\u25BE'; // ▾
+
+      var removeBtn = document.createElement('button');
+      removeBtn.className = 'remove-malchin';
+      removeBtn.textContent = '\u2715'; // ✕
+      removeBtn.title = 'Малчин хасах';
+      removeBtn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        removeMalchin(name);
+      });
+
+      header.appendChild(nameSpan);
+      header.appendChild(badge);
+      header.appendChild(arrow);
+      header.appendChild(removeBtn);
+      header.addEventListener('click', function () {
+        toggleMalchin(name);
+      });
+
+      li.appendChild(header);
+
+      // ---- Body (horse rows), only built when expanded ----
+      var body = document.createElement('div');
+      body.className = 'malchin-body';
+
+      if (isExpanded) {
+        var bodyInner = document.createElement('div');
+        bodyInner.className = 'malchin-body-inner';
+        bodyInner.appendChild(buildHorseRows(name, focusIndex));
+        body.appendChild(bodyInner);
+      }
+
+      li.appendChild(body);
+      malchinListEl.appendChild(li);
+    });
+  }
+
+  function toggleMalchin(name) {
+    activeMalchin = (activeMalchin === name) ? null : name;
+    renderMalchinList();
+  }
+
+  function addMalchin() {
+    var input = document.getElementById('malchin-input');
+    var countInput = document.getElementById('malchin-count-input');
+    var name = input.value.trim();
+    var total = parseInt(countInput.value, 10);
+
+    if (!name) { input.focus(); return; }
+    if (!total || total < 1) { countInput.focus(); return; }
+
+    if (malchins[name]) {
+      activeMalchin = name;
+      input.value = '';
+      countInput.value = '';
+      renderMalchinList();
+      return;
+    }
+
+    malchins[name] = {
+      total: total,
+      weights: new Array(total).fill(null)
+    };
+    input.value = '';
+    countInput.value = '';
+    activeMalchin = name;
+    renderMalchinList();
+  }
+
+  function removeMalchin(name) {
+    delete malchins[name];
+    if (activeMalchin === name) activeMalchin = null;
+    renderMalchinList();
+  }
+
+  // ---------- Horse rows ----------
+  function buildHorseRows(name, focusIndex) {
+    var data = malchins[name];
+    var wrap = document.createElement('div');
+    wrap.className = 'horse-rows';
+
+    for (var i = 0; i < data.total; i++) {
+      (function (idx) {
+        var filled = data.weights[idx] !== null;
+        var row = document.createElement('div');
+        row.className = 'horse-row' + (filled ? '' : ' editing');
+
+        var label = document.createElement('span');
+        label.className = 'h-label';
+        label.textContent = 'Ямаа ' + (idx + 1);
+        row.appendChild(label);
+
+        if (filled) {
+          var value = document.createElement('span');
+          value.className = 'h-value';
+          value.textContent = data.weights[idx] + ' ';
+          var kg = document.createElement('span');
+          kg.className = 'kg';
+          kg.textContent = 'кг';
+          value.appendChild(kg);
+          row.appendChild(value);
+
+          var del = document.createElement('button');
+          del.className = 'delete-btn';
+          del.textContent = '\u{1F5D1}'; // 🗑
+          del.title = 'Устгах';
+          del.addEventListener('click', function (e) {
+            e.stopPropagation();
+            deleteHorse(name, idx);
+          });
+          row.appendChild(del);
+        } else {
+          var input = document.createElement('input');
+          input.className = 'h-input weight-input';
+          input.type = 'number';
+          input.step = '0.1';
+          input.placeholder = 'Жин (кг) — Enter дарж хадгална';
+          input.dataset.index = idx;
+
+          input.addEventListener('click', function (e) { e.stopPropagation(); });
+          input.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') {
+              var val = input.value.trim();
+              if (!val) return;
+              saveHorse(name, idx, parseFloat(val));
+            }
+          });
+
+          row.appendChild(input);
+        }
+
+        wrap.appendChild(row);
+      })(i);
+    }
+
+    setTimeout(function () {
+      var toFocus;
+      if (typeof focusIndex === 'number') {
+        toFocus = wrap.querySelector('.weight-input[data-index="' + focusIndex + '"]');
+      }
+      if (!toFocus) toFocus = wrap.querySelector('.weight-input');
+      if (toFocus) toFocus.focus();
+    }, 0);
+
+    return wrap;
+  }
+
+  function saveHorse(name, index, weight) {
+    var data = malchins[name];
+    data.weights[index] = weight;
+
+    var nextIndex = -1;
+    for (var i = index + 1; i < data.total; i++) {
+      if (data.weights[i] === null) { nextIndex = i; break; }
+    }
+    if (nextIndex === -1) {
+      for (var j = 0; j < data.total; j++) {
+        if (data.weights[j] === null) { nextIndex = j; break; }
+      }
+    }
+
+    renderMalchinList(nextIndex === -1 ? undefined : nextIndex);
+  }
+
+  function deleteHorse(name, index) {
+    var data = malchins[name];
+    data.weights[index] = null;
+    renderMalchinList(index);
+  }
+
+  // ---------- Send (Firestore-т хадгална) ----------
+  sendBtn.addEventListener('click', function () {
+    var totalMalchin = Object.keys(malchins).length;
+    if (totalMalchin === 0) return;
+
+    var totalWeighed = 0;
+    var totalPlanned = 0;
+    var records = [];
+
+    Object.keys(malchins).forEach(function (name) {
+      var d = malchins[name];
+      totalPlanned += d.total;
+      totalWeighed += d.weights.filter(function (w) { return w !== null; }).length;
+      records.push({ malchin: name, total: d.total, weights: d.weights });
+    });
+
+    sendBtn.disabled = true;
+    sendBtn.textContent = 'Илгээж байна...';
+
+    addDoc(collection(db, 'yamaa_weighings'), {
+      malchins: records,
+      totalMalchin: totalMalchin,
+      totalWeighed: totalWeighed,
+      totalPlanned: totalPlanned,
+      createdAt: serverTimestamp()
+    }).then(function () {
+      document.getElementById('success-detail').textContent =
+        totalMalchin + ' малчин, ' + totalWeighed + '/' + totalPlanned + ' ямааны жин Firebase-т амжилттай хадгалагдлаа.';
+      document.getElementById('overlay').classList.add('visible');
+
+      // Амжилттай илгээсэн тул орон нутгийн жагсаалтыг цэвэрлэнэ.
+      malchins = {};
+      activeMalchin = null;
+      renderMalchinList();
+    }).catch(function (err) {
+      console.error('Firestore алдаа:', err);
+      alert('Firebase рүү хадгалахад алдаа гарлаа. Дахин оролдоно уу.');
+    }).finally(function () {
+      sendBtn.disabled = false;
+      sendBtn.textContent = 'Илгээх';
+    });
+  });
+
+  document.getElementById('overlay-close').addEventListener('click', function () {
+    document.getElementById('overlay').classList.remove('visible');
+  });
+
+  document.getElementById('add-malchin-btn').addEventListener('click', addMalchin);
+  document.getElementById('malchin-input').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      document.getElementById('malchin-count-input').focus();
+    }
+  });
+  document.getElementById('malchin-count-input').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') addMalchin();
+  });
+
+  renderMalchinList();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Адуу Ямааны Жин</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: Arial, sans-serif;
+    background: #FAF6F0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    margin: 0;
+    padding: 20px;
+  }
+
+  /* ---------- Login ---------- */
+  .login-box {
+    background: #fff;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 2px 12px rgba(74,67,60,0.08);
+    width: 300px;
+    border: 1px solid #EAE1D3;
+  }
+  .login-box h1 {
+    font-size: 20px;
+    margin: 0 0 4px;
+    text-align: center;
+    color: #4A433C;
+  }
+  .login-box p {
+    font-size: 12.5px;
+    text-align: center;
+    color: #9A9186;
+    margin: 0 0 20px;
+  }
+  .field {
+    margin-bottom: 14px;
+  }
+  .field label {
+    display: block;
+    margin-bottom: 5px;
+    font-size: 14px;
+    color: #4A433C;
+  }
+  .field input {
+    width: 100%;
+    padding: 8px;
+    font-size: 14px;
+    border: 1px solid #EAE1D3;
+    border-radius: 6px;
+    background: #FAF6F0;
+  }
+  .field input:focus {
+    outline: none;
+    border-color: #E8C77E;
+  }
+  button {
+    width: 100%;
+    padding: 10px;
+    background: #E8C77E;
+    color: #5C4A1F;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  button:hover {
+    background: #C9A25A;
+    color: #fff;
+  }
+  button:disabled {
+    background: #EAE1D3;
+    color: #9A9186;
+    cursor: not-allowed;
+  }
+  .error {
+    color: #E08A7D;
+    font-size: 13px;
+    margin-top: 10px;
+    display: none;
+    text-align: center;
+  }
+
+  /* ---------- Selection screen ---------- */
+  #select-screen {
+    display: none;
+    width: 100%;
+    max-width: 480px;
+    text-align: center;
+  }
+  #select-screen h1 {
+    font-size: 22px;
+    color: #4A433C;
+    margin: 0 0 6px;
+  }
+  #select-screen p {
+    font-size: 13px;
+    color: #9A9186;
+    margin: 0 0 24px;
+  }
+  .options {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .option-card {
+    background: #fff;
+    border: 1px solid #EAE1D3;
+    border-radius: 10px;
+    padding: 26px 20px;
+    width: 180px;
+    cursor: pointer;
+    text-align: center;
+    transition: transform .15s, box-shadow .15s;
+  }
+  .option-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 16px rgba(74,67,60,0.1);
+  }
+  .option-card .icon {
+    font-size: 34px;
+    margin-bottom: 10px;
+  }
+  .option-card.horse { border-color: #F0DFAF; }
+  .option-card.goat { border-color: #CFE7C7; }
+  .option-card h2 {
+    font-size: 15px;
+    margin: 0;
+    color: #4A433C;
+  }
+</style>
+</head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<div class="login-box" id="login-box">
+  <h1>Адуу Ямааны Жин</h1>
+  <p>Малын жин бүртгэлийн систем</p>
+  <form id="login-form">
+    <div class="field">
+      <label for="username">Нэвтрэх нэр</label>
+      <input id="username" type="text" required>
+    </div>
+    <div class="field">
+      <label for="password">Нууц үг</label>
+      <input id="password" type="password" required>
+    </div>
+    <button type="submit" id="login-btn">Нэвтрэх</button>
+    <p class="error" id="login-error">Нэвтрэх нэр эсвэл нууц үг буруу байна.</p>
+  </form>
+</div>
+
+<!-- SELECTION SCREEN -->
+<div id="select-screen">
+  <h1>Ямар мал жинлэх вэ?</h1>
+  <p>Доорх сонголтоос сонгоно уу.</p>
+  <div class="options">
+    <div class="option-card horse" onclick="window.location.href='aduu.html'">
+      <div class="icon">🐴</div>
+      <h2>Адууны жин</h2>
+    </div>
+    <div class="option-card goat" onclick="window.location.href='yamaa.html'">
+      <div class="icon">🐐</div>
+      <h2>Ямааны жин</h2>
+    </div>
+  </div>
+</div>
+
+<!-- Firebase (v12.16.0 modular SDK) -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-analytics.js";
+  import { getFirestore } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
+
+  // firebaseConfig-ийг ЭНД шууд бичихгүй!
+  // "firebase-config.js" файл нь .gitignore-т байгаа тул GitHub дээр харагдахгүй.
+  import { firebaseConfig } from "./firebase-config.js";
+
+  const app = initializeApp(firebaseConfig);
+  const analytics = getAnalytics(app);
+  const db = getFirestore(app);
+
+  // -----------------------------------------------------------------------
+  // Нэвтрэх нэр, нууц үгийг энд өөрчилж болно.
+  // -----------------------------------------------------------------------
+  var VALID_USERNAME = "admin";
+  var VALID_PASSWORD = "1122";
+
+  document.getElementById('login-form').addEventListener('submit', function(e){
+    e.preventDefault();
+    var u = document.getElementById('username').value.trim();
+    var p = document.getElementById('password').value.trim();
+    var err = document.getElementById('login-error');
+
+    if (u === VALID_USERNAME && p === VALID_PASSWORD) {
+      err.style.display = 'none';
+      document.getElementById('login-box').style.display = 'none';
+      document.getElementById('select-screen').style.display = 'block';
+    } else {
+      err.style.display = 'block';
+    }
+  });
+</script>
+
+</body>
+</html>
