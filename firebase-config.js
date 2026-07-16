@@ -3,7 +3,7 @@
 // .gitignore файлд "firebase-config.js" гэж заавал нэмсэн байх ёстой.
 // -----------------------------------------------------------------------
 export const firebaseConfig = {
-  apiKey: "AIzaSyD9hFpmWz0_RRSb09eplg9G1ZUKfrsWmoA",
+  apiKey: "AIzaSyCSIX5WdKh3NVx9_iJlOn-WsiSTVtu16Rw",
   authDomain: "aduu-yamaanii-jin.firebaseapp.com",
   projectId: "aduu-yamaanii-jin",
   storageBucket: "aduu-yamaanii-jin.firebasestorage.app",
