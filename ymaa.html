@@ -64,6 +64,39 @@
   }
   h3.section-title:first-of-type { margin-top: 0; }
 
+  /* ---------- Google Drive connection row ---------- */
+  .gdrive-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 12px;
+    border: 1px solid #EAE1D3;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    font-size: 12.5px;
+  }
+  .gdrive-status {
+    color: #9A9186;
+  }
+  .gdrive-status.connected {
+    color: #6FA97B;
+    font-weight: bold;
+  }
+  .gdrive-btn {
+    width: auto;
+    padding: 7px 14px;
+    background: #E8C77E;
+    color: #5C4A1F;
+    border: none;
+    border-radius: 6px;
+    font-size: 12.5px;
+    font-weight: bold;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .gdrive-btn:hover { background: #C9A25A; color: #fff; }
+
   .add-row {
     display: flex;
     gap: 6px;
@@ -326,6 +359,11 @@
     <h1>🐐 Ямааны Жин</h1>
     <p class="sub">Малчин болон ямааны жин бүртгэх</p>
 
+    <div class="gdrive-row">
+      <span class="gdrive-status" id="gdrive-status">Google Drive: холбогдоогүй</span>
+      <button type="button" class="gdrive-btn" id="gdrive-connect-btn">Холбох</button>
+    </div>
+
     <h3 class="section-title">Малчин</h3>
     <div class="add-row">
       <input id="malchin-input" type="text" placeholder="Малчны нэр">
@@ -351,6 +389,9 @@
     <button id="overlay-close">Ойлголоо</button>
   </div>
 </div>
+
+<!-- Google Identity Services (OAuth, Drive-руу шууд файл үүсгэхэд) -->
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 
 <!-- Firebase (v12.16.0 modular SDK) -->
 <script type="module">
@@ -378,6 +419,127 @@
   signInAnonymously(auth).catch(function (err) {
     console.error("Firebase auth алдаа:", err);
   });
+
+  // =========================================================================
+  // Google Drive холболт (OAuth 2.0, Google Identity Services)
+  // -------------------------------------------------------------------------
+  // Ажиллуулахын тулд доорх GOOGLE_CLIENT_ID-г Google Cloud Console-оос авсан
+  // "OAuth 2.0 Client ID" (Web application) утгаараа солино.
+  // Client ID нь нууц биш тул код дотор шууд бичихэд асуудалгүй, гэхдээ
+  // Google Cloud Console дээр "Authorized JavaScript origins" хэсэгт энэ
+  // сайтын хаягийг (жишээ нь https://tanii-domain.com) нэмсэн байх шаардлагатай.
+  // Мөн "Google Drive API"-г тухайн Cloud Project дээрээ Enable хийсэн байх
+  // ёстой. Зөвшөөрлийн хүрээ нь drive.file тул апп зөвхөн өөрийн үүсгэсэн
+  // файлдаа хандах бөгөөд хэрэглэгчийн бусад Drive файлд хүрэхгүй.
+  // =========================================================================
+  var GOOGLE_CLIENT_ID = "YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com";
+  var GOOGLE_DRIVE_SCOPE = "https://www.googleapis.com/auth/drive.file";
+  var googleAccessToken = null;
+  var googleTokenClient = null;
+
+  var gdriveStatusEl = document.getElementById('gdrive-status');
+  var gdriveBtnEl = document.getElementById('gdrive-connect-btn');
+
+  function updateGoogleStatus(connected) {
+    if (connected) {
+      gdriveStatusEl.textContent = 'Google Drive: холбогдсон';
+      gdriveStatusEl.classList.add('connected');
+      gdriveBtnEl.textContent = 'Дахин холбох';
+    } else {
+      gdriveStatusEl.textContent = 'Google Drive: холбогдоогүй';
+      gdriveStatusEl.classList.remove('connected');
+      gdriveBtnEl.textContent = 'Холбох';
+    }
+  }
+
+  function initGoogleAuth() {
+    if (!window.google || !google.accounts || !google.accounts.oauth2) {
+      // Google-ийн скрипт async ачаалж байгаа тул бэлэн болтол түр хүлээнэ.
+      setTimeout(initGoogleAuth, 300);
+      return;
+    }
+    if (GOOGLE_CLIENT_ID.indexOf('YOUR_GOOGLE_CLIENT_ID') === 0) {
+      gdriveStatusEl.textContent = 'Google Drive: Client ID тохируулаагүй байна';
+      gdriveBtnEl.disabled = true;
+      return;
+    }
+    googleTokenClient = google.accounts.oauth2.initTokenClient({
+      client_id: GOOGLE_CLIENT_ID,
+      scope: GOOGLE_DRIVE_SCOPE,
+      callback: function (tokenResponse) {
+        if (tokenResponse && tokenResponse.access_token) {
+          googleAccessToken = tokenResponse.access_token;
+          updateGoogleStatus(true);
+        }
+      }
+    });
+  }
+
+  gdriveBtnEl.addEventListener('click', function () {
+    if (!googleTokenClient) {
+      initGoogleAuth();
+    }
+    if (googleTokenClient) {
+      googleTokenClient.requestAccessToken({ prompt: 'consent' });
+    }
+  });
+
+  window.addEventListener('load', initGoogleAuth);
+
+  function buildCsv(records) {
+    var lines = ['Малчин,Дугаар,Жин (кг)'];
+    records.forEach(function (r) {
+      r.weights.forEach(function (w, i) {
+        if (w !== null) {
+          lines.push('"' + String(r.malchin).replace(/"/g, '""') + '",' + (i + 1) + ',' + w);
+        }
+      });
+    });
+    return lines.join('\r\n');
+  }
+
+  function uploadCsvToDrive(filename, csvText) {
+    var boundary = '-------314159265358979323846';
+    var delimiter = '\r\n--' + boundary + '\r\n';
+    var closeDelim = '\r\n--' + boundary + '--';
+    var metadata = { name: filename, mimeType: 'text/csv' };
+    var body =
+      delimiter +
+      'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
+      JSON.stringify(metadata) +
+      delimiter +
+      'Content-Type: text/csv; charset=UTF-8\r\n\r\n' +
+      csvText +
+      closeDelim;
+
+    return fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + googleAccessToken,
+        'Content-Type': 'multipart/related; boundary="' + boundary + '"'
+      },
+      body: body
+    }).then(function (res) {
+      if (!res.ok) {
+        throw new Error('Drive upload failed with status ' + res.status);
+      }
+      return res.json();
+    });
+  }
+
+  function sendToGoogleDrive(records) {
+    if (!googleAccessToken) return Promise.resolve('not-connected');
+    var csv = buildCsv(records);
+    var now = new Date();
+    var stamp = now.toISOString().slice(0, 19).replace(/[:T]/g, '-');
+    var filename = 'yamaa_jin_' + stamp + '.csv';
+    return uploadCsvToDrive(filename, csv).then(function () {
+      return 'uploaded';
+    }).catch(function (err) {
+      console.error('Google Drive алдаа:', err);
+      return 'failed';
+    });
+  }
 
   // ---------- State ----------
   // malchins = { name: { total: N, weights: [null, 12.5, ...], sent: false } }
@@ -597,7 +759,7 @@
     renderMalchinList(index);
   }
 
-  // ---------- Send (Firestore-т хадгална) ----------
+  // ---------- Send (Firestore-т хадгалж, дараа нь Google Drive-руу CSV илгээнэ) ----------
   sendBtn.addEventListener('click', function () {
     var totalMalchin = Object.keys(malchins).length;
     if (totalMalchin === 0) return;
@@ -623,8 +785,17 @@
       totalPlanned: totalPlanned,
       createdAt: serverTimestamp()
     }).then(function () {
-      document.getElementById('success-detail').textContent =
-        totalMalchin + ' малчин, ' + totalWeighed + '/' + totalPlanned + ' ямааны жин Firebase-т амжилттай хадгалагдлаа.';
+      return sendToGoogleDrive(records);
+    }).then(function (driveResult) {
+      var detail = totalMalchin + ' малчин, ' + totalWeighed + '/' + totalPlanned + ' ямааны жин Firebase-т амжилттай хадгалагдлаа.';
+      if (driveResult === 'uploaded') {
+        detail += ' Мөн Google Drive-д CSV файлаар хадгалагдлаа.';
+      } else if (driveResult === 'not-connected') {
+        detail += ' Google Drive холбогдоогүй тул зөвхөн Firebase-т хадгалагдлаа.';
+      } else if (driveResult === 'failed') {
+        detail += ' Гэвч Google Drive рүү илгээхэд алдаа гарлаа.';
+      }
+      document.getElementById('success-detail').textContent = detail;
       document.getElementById('overlay').classList.add('visible');
 
       // Амжилттай илгээсэн тул малчин + жингийн мэдээллийг устгахгүй,
